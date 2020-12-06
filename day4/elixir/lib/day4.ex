@@ -65,11 +65,8 @@ defmodule Day4 do
 
   def validate_passport(passport_memo) do
     available_fields = MapSet.new(passport_memo |> Map.keys)
-    case MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")) do
-      true -> true
-      false -> false
-    end
 
+    # Line 70 has "Function call without opaqueness type mismatch." warning. Why so?
     with true <- MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")),
       true <- validate_byr(passport_memo),
       true <- validate_iyr(passport_memo),
