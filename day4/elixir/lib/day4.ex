@@ -7,9 +7,65 @@ defmodule Day4 do
     String.split(result, ["\n"])
   end
 
+  def solve_part1() do
+    input = get_input()
+    count_valid_passport(input, MapSet.new(), 0, :basic_validation)
+  end
+
   def solve_part2() do
     input = get_input()
-    count_valid_passport(input, MapSet.new(), 0)
+    count_valid_passport(input, MapSet.new(), 0, :full_validation)
+  end
+
+  def count_valid_passport([], passport_memo, count, validation_mode) do
+    case validate_passport(passport_memo, validation_mode) do
+      true -> count + 1
+      false -> count
+    end
+  end
+
+  def count_valid_passport(["" | t], passport_memo, count, validation_mode) do
+    case validate_passport(passport_memo, validation_mode) do
+      true -> count_valid_passport(t, %{}, count + 1, validation_mode)
+      false -> count_valid_passport(t, %{}, count, validation_mode)
+    end
+  end
+
+  def count_valid_passport([h | t], passport_memo = %{}, count, validation_mode) do
+    # build up
+    tokens = h |> String.split(" ")
+    passport_memo = tokens
+      |> Enum.reduce(passport_memo, fn token, acc ->
+        [_, key, value] = ~r/(?<key>\w\w\w):(?<value>.*)/ |> Regex.run(token)
+
+        acc |> Map.put(key, value)
+      end)
+    count_valid_passport(t, passport_memo, count, validation_mode)
+  end
+
+  def validate_passport(passport_memo, :basic_validation) do
+    available_fields = MapSet.new(passport_memo |> Map.keys)
+    MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid"))
+  end
+
+  def validate_passport(passport_memo, :full_validation) do
+    available_fields = MapSet.new(passport_memo |> Map.keys)
+
+    # Line 75 has "Function call without opaqueness type mismatch." warning. Why so?
+    with true <- MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")),
+      true <- validate_byr(passport_memo),
+      true <- validate_iyr(passport_memo),
+      true <- validate_eyr(passport_memo),
+      true <- validate_hgt(passport_memo),
+      true <- validate_hcl(passport_memo),
+      true <- validate_ecl(passport_memo),
+      true <- validate_pid(passport_memo)
+    do
+      true
+    else
+      # when any of the predicates in `with` return false, return false (from the function.)
+      false -> false
+    end
   end
 
   def validate_byr(%{"byr" => value}) do
@@ -63,63 +119,8 @@ defmodule Day4 do
     (String.length(value) == 9) && Regex.match?(~r/\d{9}/, value)
   end
 
-  def validate_passport(passport_memo) do
-    available_fields = MapSet.new(passport_memo |> Map.keys)
 
-    # Line 70 has "Function call without opaqueness type mismatch." warning. Why so?
-    with true <- MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")),
-      true <- validate_byr(passport_memo),
-      true <- validate_iyr(passport_memo),
-      true <- validate_eyr(passport_memo),
-      true <- validate_hgt(passport_memo),
-      true <- validate_hcl(passport_memo),
-      true <- validate_ecl(passport_memo),
-      true <- validate_pid(passport_memo)
-    do
-      true
-    else
-      false -> false
-    end
-  end
 
-  def count_valid_passport([], passport_memo, count) do
-    case validate_passport(passport_memo) do
-      true -> count + 1
-      false -> count
-    end
-    # available_fields = MapSet.new(passport_memo |> Map.keys)
-    # case MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")) do
-    #   true -> count + 1
-    #   false -> count
-    # end
-  end
 
-  def count_valid_passport(["" | t], passport_memo, count) do
-    case validate_passport(passport_memo) do
-      true -> count_valid_passport(t, %{}, count + 1)
-      false -> count_valid_passport(t, %{}, count)
-    end
-
-    # validate
-    # IO.inspect(passport_memo)
-    # available_fields = MapSet.new(passport_memo |> Map.keys)
-    # case MapSet.equal?(@required_fields, available_fields |> MapSet.delete("cid")) do
-    #   true ->
-    #     count_valid_passport(t, %{}, count + 1)
-    #   false -> count_valid_passport(t, %{}, count)
-    # end
-  end
-
-  def count_valid_passport([h | t], passport_memo = %{}, count) do
-    # build up
-    tokens = h |> String.split(" ")
-    passport_memo = tokens
-      |> Enum.reduce(passport_memo, fn token, acc ->
-        [_, key, value] = ~r/(?<key>\w\w\w):(?<value>.*)/ |> Regex.run(token)
-
-        acc |> Map.put(key, value)
-      end)
-    count_valid_passport(t, passport_memo, count)
-  end
 
 end
