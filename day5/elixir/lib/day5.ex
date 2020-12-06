@@ -9,13 +9,20 @@ defmodule Day5 do
   end
 
   def solve_part1() do
+    list_all_seat_ids() |> Enum.max
+  end
+
+  def solve_part2() do
+    list_all_seat_ids()
+  end
+
+  def list_all_seat_ids() do
     get_input() |>
     Enum.map(fn %{"row" => row, "col" => col} ->
       row = String.split(row, "", trim: true)
       col = String.split(col, "", trim: true)
       seat_id(parse_row(row), parse_column(col))
     end)
-    |> Enum.max
   end
 
   def seat_id(row, column) do
@@ -42,6 +49,23 @@ defmodule Day5 do
   def parse([h | t], {l, u}) when h == "B" or h == "R" do
     l = l + div((u + 1) - l, 2)
     parse(t, {l, u})
+  end
+
+  def seat_number_diff(seats) do
+    seats = Enum.sort(seats)
+    [_ | shifted_seats] = seats
+    seat_number_diff(seats, shifted_seats, [])
+  end
+
+  def seat_number_diff([_h], [], acc) do
+    acc
+  end
+
+  def seat_number_diff([h | t], [shifted_h | shifted_t], acc) do
+    d = shifted_h - h
+    # Answer with the seat between d == 2.
+    IO.puts("d = #{d} h = #{h}, shifted_h = #{shifted_h}")
+    seat_number_diff(t, shifted_t, [(shifted_h - h) | acc])
   end
 
 end
